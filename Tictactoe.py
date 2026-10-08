@@ -83,7 +83,7 @@ def computer_move(board, mark):
 class TicTacToeApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Tic-Tac-Toe")
+        self.root.title("איקס-עיגול")
         self.root.configure(bg=BG)
         self.root.resizable(False, False)
 
@@ -94,107 +94,82 @@ class TicTacToeApp:
         self.computer_mark = "O"
         self.game_over = False
         self.buttons = []
+        self.score = {"X": 0, "O": 0, "draw": 0}
 
-        self.title_font = tkfont.Font(family="Helvetica", size=22, weight="bold")
-        self.status_font = tkfont.Font(family="Helvetica", size=14)
-        self.cell_font = tkfont.Font(family="Helvetica", size=32, weight="bold")
-        self.ui_font = tkfont.Font(family="Helvetica", size=12)
+        self.title_font = tkfont.Font(size=22, weight="bold")
+        self.status_font = tkfont.Font(size=14)
+        self.cell_font = tkfont.Font(size=32, weight="bold")
+        self.ui_font = tkfont.Font(size=12)
 
         self._build()
-        self._new_game()
+        self._new_game(reset_score=True)
+
+    def _radio(self, parent, text, variable, value, command):
+        return tk.Radiobutton(
+            parent,
+            text=text,
+            variable=variable,
+            value=value,
+            command=command,
+            font=self.ui_font,
+            fg=TEXT,
+            bg=BG,
+            activebackground=BG,
+            activeforeground=TEXT,
+            selectcolor=PANEL,
+            highlightthickness=0,
+        )
 
     def _build(self):
         tk.Label(
             self.root,
-            text="Tic-Tac-Toe",
+            text="איקס-עיגול",
             font=self.title_font,
             fg=ACCENT,
             bg=BG,
         ).pack(pady=(18, 6))
 
         self.status = tk.Label(self.root, text="", font=self.status_font, fg=TEXT, bg=BG)
-        self.status.pack(pady=(0, 12))
+        self.status.pack(pady=(0, 4))
+
+        self.score_label = tk.Label(self.root, text="", font=self.ui_font, fg=MUTED, bg=BG)
+        self.score_label.pack(pady=(0, 10))
 
         controls = tk.Frame(self.root, bg=BG)
-        controls.pack(pady=(0, 12))
+        controls.pack(pady=(0, 8))
 
         self.mode = tk.StringVar(value="human")
         self.mark = tk.StringVar(value="X")
 
-        tk.Radiobutton(
-            controls,
-            text="Two players",
-            variable=self.mode,
-            value="human",
-            command=self._on_settings_change,
-            font=self.ui_font,
-            fg=TEXT,
-            bg=BG,
-            activebackground=BG,
-            activeforeground=TEXT,
-            selectcolor=PANEL,
-            highlightthickness=0,
-        ).grid(row=0, column=0, padx=8)
-        tk.Radiobutton(
-            controls,
-            text="Vs computer",
-            variable=self.mode,
-            value="computer",
-            command=self._on_settings_change,
-            font=self.ui_font,
-            fg=TEXT,
-            bg=BG,
-            activebackground=BG,
-            activeforeground=TEXT,
-            selectcolor=PANEL,
-            highlightthickness=0,
-        ).grid(row=0, column=1, padx=8)
+        self._radio(controls, "שני שחקנים", self.mode, "human", self._on_settings_change).grid(
+            row=0, column=0, padx=8
+        )
+        self._radio(controls, "מול המחשב", self.mode, "computer", self._on_settings_change).grid(
+            row=0, column=1, padx=8
+        )
 
         self.mark_frame = tk.Frame(self.root, bg=BG)
-        self.mark_frame.pack(pady=(0, 10))
         tk.Label(
             self.mark_frame,
-            text="Play as:",
+            text="לשחק כ־",
             font=self.ui_font,
             fg=MUTED,
             bg=BG,
         ).pack(side=tk.LEFT, padx=(0, 8))
-        tk.Radiobutton(
-            self.mark_frame,
-            text="X (first)",
-            variable=self.mark,
-            value="X",
-            command=self._on_settings_change,
-            font=self.ui_font,
-            fg=TEXT,
-            bg=BG,
-            activebackground=BG,
-            activeforeground=TEXT,
-            selectcolor=PANEL,
-            highlightthickness=0,
-        ).pack(side=tk.LEFT)
-        tk.Radiobutton(
-            self.mark_frame,
-            text="O (second)",
-            variable=self.mark,
-            value="O",
-            command=self._on_settings_change,
-            font=self.ui_font,
-            fg=TEXT,
-            bg=BG,
-            activebackground=BG,
-            activeforeground=TEXT,
-            selectcolor=PANEL,
-            highlightthickness=0,
-        ).pack(side=tk.LEFT)
+        self._radio(self.mark_frame, "X (ראשון)", self.mark, "X", self._on_settings_change).pack(
+            side=tk.LEFT
+        )
+        self._radio(self.mark_frame, "O (שני)", self.mark, "O", self._on_settings_change).pack(
+            side=tk.LEFT
+        )
 
-        board_frame = tk.Frame(self.root, bg=PANEL, padx=10, pady=10)
-        board_frame.pack(padx=24, pady=8)
+        self.board_frame = tk.Frame(self.root, bg=PANEL, padx=10, pady=10)
+        self.board_frame.pack(padx=24, pady=8)
 
         for index in range(9):
             row, col = divmod(index, 3)
             button = tk.Button(
-                board_frame,
+                self.board_frame,
                 text="",
                 font=self.cell_font,
                 width=3,
@@ -202,6 +177,7 @@ class TicTacToeApp:
                 bg=EMPTY,
                 fg=TEXT,
                 activebackground="#475569",
+                disabledforeground=TEXT,
                 relief=tk.FLAT,
                 command=lambda i=index: self._on_click(i),
             )
@@ -210,7 +186,7 @@ class TicTacToeApp:
 
         tk.Button(
             self.root,
-            text="New game",
+            text="משחק חדש",
             font=self.ui_font,
             bg=ACCENT,
             fg=BG,
@@ -218,22 +194,32 @@ class TicTacToeApp:
             relief=tk.FLAT,
             padx=16,
             pady=6,
-            command=self._new_game,
+            command=lambda: self._new_game(reset_score=False),
         ).pack(pady=(14, 20))
 
         self._update_mark_visibility()
+        self._refresh_score()
 
     def _update_mark_visibility(self):
         if self.mode.get() == "computer":
-            self.mark_frame.pack(pady=(0, 10))
+            self.mark_frame.pack(before=self.board_frame, pady=(0, 10))
         else:
             self.mark_frame.pack_forget()
 
     def _on_settings_change(self):
         self._update_mark_visibility()
-        self._new_game()
+        self._new_game(reset_score=True)
 
-    def _new_game(self):
+    def _refresh_score(self):
+        self.score_label.config(
+            text=f"X: {self.score['X']}    O: {self.score['O']}    תיקו: {self.score['draw']}"
+        )
+
+    def _new_game(self, reset_score=False):
+        if reset_score:
+            self.score = {"X": 0, "O": 0, "draw": 0}
+            self._refresh_score()
+
         self.board = [""] * 9
         self.turn = "X"
         self.game_over = False
@@ -245,7 +231,7 @@ class TicTacToeApp:
             button.config(text="", fg=TEXT, bg=EMPTY, state=tk.NORMAL)
 
         if self.vs_computer and self.turn == self.computer_mark:
-            self.status.config(text="Computer is thinking…")
+            self.status.config(text="המחשב חושב…")
             self.root.after(250, self._play_computer)
         else:
             self._set_status()
@@ -255,11 +241,11 @@ class TicTacToeApp:
             return
         if self.vs_computer:
             if self.turn == self.human_mark:
-                self.status.config(text=f"Your turn ({self.human_mark})")
+                self.status.config(text=f"התור שלך ({self.human_mark})")
             else:
-                self.status.config(text="Computer is thinking…")
+                self.status.config(text="המחשב חושב…")
         else:
-            self.status.config(text=f"{self.turn}'s turn")
+            self.status.config(text=f"התור של {self.turn}")
 
     def _on_click(self, index):
         if self.game_over or self.board[index]:
@@ -271,7 +257,7 @@ class TicTacToeApp:
         if self.game_over:
             return
         if self.vs_computer and self.turn == self.computer_mark:
-            self.status.config(text="Computer is thinking…")
+            self.status.config(text="המחשב חושב…")
             self.root.after(250, self._play_computer)
 
     def _play_computer(self):
@@ -294,21 +280,25 @@ class TicTacToeApp:
         line = winning_line(self.board)
         if line:
             self.game_over = True
+            found = self.board[line[0]]
             for index in line:
                 self.buttons[index].config(bg=WIN_BG)
-            found = self.board[line[0]]
+            self.score[found] += 1
+            self._refresh_score()
             if self.vs_computer:
                 if found == self.human_mark:
-                    self.status.config(text="You win!")
+                    self.status.config(text="ניצחת!")
                 else:
-                    self.status.config(text="Computer wins!")
+                    self.status.config(text="המחשב ניצח!")
             else:
-                self.status.config(text=f"{found} wins!")
+                self.status.config(text=f"{found} ניצח!")
             return
 
         if board_full(self.board):
             self.game_over = True
-            self.status.config(text="Draw.")
+            self.score["draw"] += 1
+            self._refresh_score()
+            self.status.config(text="תיקו.")
             return
 
         self.turn = "O" if self.turn == "X" else "X"
